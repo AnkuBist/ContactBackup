@@ -6,6 +6,8 @@ package com.hgil.contactbackup.util;
 
 public class API {
 
+    public static final String USERNAME = "ankush";
+
     // public static final String BASE_URL = "http://10.10.1.121:81/contact_sync/";
     public static final String BASE_URL = "http://ankubist.esy.es/call_rec/contact_sync/";
     public static final String UPLOAD_CONTACT_URL = "user/uploadContact";
