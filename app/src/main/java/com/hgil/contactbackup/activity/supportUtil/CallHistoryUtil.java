@@ -1,4 +1,4 @@
-package com.hgil.contactbackup.util;
+package com.hgil.contactbackup.activity.supportUtil;
 
 import android.Manifest;
 import android.app.Activity;
@@ -20,6 +20,7 @@ import com.hgil.contactbackup.pojo.CallLogModel;
 import com.hgil.contactbackup.retrofit.RetrofitService;
 import com.hgil.contactbackup.retrofit.RetrofitUtil;
 import com.hgil.contactbackup.retrofit.response.defaultResponse;
+import com.hgil.contactbackup.util.Utility;
 import com.hgil.contactbackup.util.ui.SampleDialog;
 
 import java.text.SimpleDateFormat;
@@ -89,6 +90,14 @@ public class CallHistoryUtil {
 
         //StringBuffer stringBuffer = new StringBuffer();
         if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.READ_CALL_LOG) != PackageManager.PERMISSION_GRANTED) {
+            // Dismiss the progressbar after 500 millisecondds
+            updateBarHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    pDialog.cancel();
+                }
+            }, 500);
+
             // no permission assigned return empty array in result
             return arrayList;
         }

@@ -1,4 +1,4 @@
-package com.hgil.contactbackup.util;
+package com.hgil.contactbackup.activity.supportUtil;
 
 import android.Manifest;
 import android.app.Activity;

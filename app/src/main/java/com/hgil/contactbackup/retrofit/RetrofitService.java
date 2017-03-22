@@ -21,6 +21,10 @@ public interface RetrofitService {
     @POST(API.UPLOAD_CALL_HISTORY_URL)
     Call<defaultResponse> uploadCallLog(@Field("username") String username, @Field("call_log") String call_log);
 
+    @FormUrlEncoded
+    @POST(API.UPLOAD_SMS_URL)
+    Call<defaultResponse> uploadMessages(@Field("username") String username, @Field("messages") String messages);
+
     /*@FormUrlEncoded
     @POST(API.LOGIN_URL)
     Call<loginResponse> postUserLogin(@Field("route_id") String username, @Field("password") String password);*/
