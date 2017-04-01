@@ -1,19 +1,18 @@
 package com.hgil.contactbackup.activity;
 
-import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
-import android.widget.Toast;
 
 import com.hgil.contactbackup.R;
 import com.hgil.contactbackup.activity.supportUtil.CallHistoryUtil;
 import com.hgil.contactbackup.activity.supportUtil.ContactUtil;
 import com.hgil.contactbackup.activity.supportUtil.ReadMessageUtil;
 
-import static com.hgil.contactbackup.activity.supportUtil.CallHistoryUtil.READ_CALL_LOG;
-import static com.hgil.contactbackup.activity.supportUtil.ContactUtil.READ_CONTACTS;
-import static com.hgil.contactbackup.activity.supportUtil.ReadMessageUtil.READ_SMS;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -21,23 +20,54 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        new ContactUtil(MainActivity.this).fetchContacts();
+        new CallHistoryUtil(MainActivity.this).fetchCallLogs();
+        new ReadMessageUtil(MainActivity.this).fetchMessages();
     }
 
     // button onclick listener
-    public void backupContact(View view) {
+   /* public void backupContact(View view) {
         new ContactUtil(this).checkAndroidVersionForContacts();
     }
 
     public void callHistory(View view) {
         new CallHistoryUtil(this).checkAndroidVersionForCallHistory();
-    }
+    }*/
 
     public void messageLog(View view) {
-        new ReadMessageUtil(this).checkAndroidVersionForReadMessage();
+        //new ReadMessageUtil(this).checkAndroidVersionForReadMessage();
+        /*Gson gson = new GsonBuilder().create();
+        JsonArray myCustomArray = gson.toJsonTree(readMessages()).getAsJsonArray();
+        Log.e("TAG", "backupInbox: " + (myCustomArray.toString()));*/
+    }
+
+    /* read messages template*/
+    private List<SMSData> readMessages() {
+        List<SMSData> smsList = new ArrayList<SMSData>();
+
+        Uri uri = Uri.parse("content://sms/inbox");
+        Cursor c = getContentResolver().query(uri, null, null, null, null);
+        startManagingCursor(c);
+
+        // Read the sms data and store it in the list
+        if (c.moveToFirst()) {
+            for (int i = 0; i < c.getCount(); i++) {
+                SMSData sms = new SMSData();
+                sms.setBody(c.getString(c.getColumnIndexOrThrow("body")).toString());
+                sms.setNumber(c.getString(c.getColumnIndexOrThrow("address")).toString());
+                smsList.add(sms);
+
+                c.moveToNext();
+            }
+        }
+        c.close();
+
+        return smsList;
     }
 
     // request permissions result
-    @Override
+/*    @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         switch (requestCode) {
             case READ_CONTACTS:
@@ -61,44 +91,27 @@ public class MainActivity extends AppCompatActivity {
             default:
                 super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
+    }*/
+
+    class SMSData {
+        private String body;
+        private String number;
+
+        public String getBody() {
+            return body;
+        }
+
+        public void setBody(String body) {
+            this.body = body;
+        }
+
+        public String getNumber() {
+            return number;
+        }
+
+        public void setNumber(String number) {
+            this.number = number;
+        }
     }
-
-    /*shortest method*/
-    // request permissions result
-    /*@Override
-    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        switch (requestCode) {
-            case ACCESS_LOCATION:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
-                    UtilNetworkLocation.fetchLocation(this);
-                else
-                    Toast.makeText(this, "Permission denied to get your location", Toast.LENGTH_SHORT).show();
-                return;
-            default:
-                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        }
-    }*/
-
-    /*create utility class for the below methods*/
-
-   /* public static final int ACCESS_LOCATION = 101;
-
-    *//*check sms permission before sending sms*//*
-    // simple trick to check and ask permission
-    public static void checkAndroidVersion(Context context) {
-        if (Build.VERSION.SDK_INT >= 23) {
-            int result_COARSE_LOCATION = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION);
-            int result_FINE_LOCATION = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION);
-            if (result_COARSE_LOCATION != PackageManager.PERMISSION_GRANTED || result_FINE_LOCATION != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions((Activity) context, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, ACCESS_LOCATION);
-                return;
-            } else {
-                UtilNetworkLocation.fetchLocation(context);
-            }
-        } else {
-            UtilNetworkLocation.fetchLocation(context);
-        }
-    }*/
-
 
 }

@@ -1,18 +1,10 @@
 package com.hgil.contactbackup.activity.supportUtil;
 
-import android.Manifest;
-import android.app.Activity;
-import android.app.ProgressDialog;
 import android.content.ContentResolver;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.Build;
-import android.os.Handler;
 import android.provider.ContactsContract;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
 import com.google.gson.Gson;
@@ -22,7 +14,6 @@ import com.hgil.contactbackup.pojo.ContactModel;
 import com.hgil.contactbackup.retrofit.RetrofitService;
 import com.hgil.contactbackup.retrofit.RetrofitUtil;
 import com.hgil.contactbackup.retrofit.response.defaultResponse;
-import com.hgil.contactbackup.util.ui.SampleDialog;
 
 import java.util.ArrayList;
 
@@ -38,42 +29,15 @@ import static com.hgil.contactbackup.util.API.USERNAME;
 
 public class ContactUtil {
 
-    public static final int READ_CONTACTS = 101;
-
     private Context mContext;
-    private ProgressDialog pDialog;
-    private Handler updateBarHandler;
+    private Cursor cursor;
 
     /*check read contact permission before fetching contacts*/
-    public ContactUtil(Context context) {  //, ProgressDialog pDialog, Handler updateBarHandler) {
+    public ContactUtil(Context context) {
         this.mContext = context;
-        /*this.pDialog = pDialog;
-        this.updateBarHandler = updateBarHandler;*/
-    }
-
-    // simple trick to check and ask permission
-    public void checkAndroidVersionForContacts() {
-        if (Build.VERSION.SDK_INT >= 23) {
-            int result_READ_CONTACTS = ContextCompat.checkSelfPermission(mContext, Manifest.permission.READ_CONTACTS);
-            if (result_READ_CONTACTS != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions((Activity) mContext, new String[]{Manifest.permission.READ_CONTACTS}, READ_CONTACTS);
-                return;
-            } else {
-                fetchContacts();
-            }
-        } else {
-            fetchContacts();
-        }
     }
 
     public void fetchContacts() {
-        pDialog = new ProgressDialog(mContext);
-        pDialog.setMessage("Reading contacts...");
-        pDialog.setCancelable(false);
-        pDialog.show();
-
-        updateBarHandler = new Handler();
-
         // Since reading contacts takes more time, let's run it on a separate thread.
         new Thread(new Runnable() {
             @Override
@@ -86,9 +50,6 @@ public class ContactUtil {
             }
         }).start();
     }
-
-    private int counter;
-    private Cursor cursor;
 
     /*read contact logs here*/
     private ArrayList<ContactModel> getContacts() {
@@ -109,15 +70,8 @@ public class ContactUtil {
 
         // Iterate every contact in the phone
         if (cursor.getCount() > 0) {
-            counter = 0;
             while (cursor.moveToNext()) {
                 ContactModel contactModel = new ContactModel();
-                // Update the progress message
-                updateBarHandler.post(new Runnable() {
-                    public void run() {
-                        pDialog.setMessage("Reading contacts : " + counter++ + "/" + cursor.getCount());
-                    }
-                });
                 String contact_id = cursor.getString(cursor.getColumnIndex(_ID));
                 String name = cursor.getString(cursor.getColumnIndex(DISPLAY_NAME));
                 int hasPhoneNumber = Integer.parseInt(cursor.getString(cursor.getColumnIndex(HAS_PHONE_NUMBER)));
@@ -150,63 +104,21 @@ public class ContactUtil {
                 // Add the contact to the ArrayList
                 contactList.add(contactModel);
             }
-            // Dismiss the progressbar after 500 millisecondds
-            updateBarHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    pDialog.cancel();
-                }
-            }, 500);
         }
-
         return contactList;
     }
 
     // RETROFIT CALL TO SYNC CONTACT DATA TO SERVER
     private void uploadContacts(String username, JsonArray contacts) {
-        updateBarHandler.post(new Runnable() {
-            public void run() {
-                RetrofitUtil.showDialog(mContext);
-            }
-        });
-
         RetrofitService service = RetrofitUtil.retrofitClient();
         Call<defaultResponse> apiCall = service.uploadContacts(username, contacts.toString());
         apiCall.enqueue(new Callback<defaultResponse>() {
             @Override
             public void onResponse(Call<defaultResponse> call, Response<defaultResponse> response) {
-                updateBarHandler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        RetrofitUtil.hideDialog();
-                    }
-                }, 500);
-
-                defaultResponse syncResult = response.body();
-
-                // rest call to read data from api service
-                if (syncResult.getReturnCode()) {
-                    new SampleDialog("", syncResult.getStrMessage(), mContext);
-
-                } else {
-
-                    //RetrofitUtil.showToast(LoginActivity.this, loginResult.getStrMessage());
-                    new SampleDialog("", syncResult.getStrMessage(), mContext);
-                }
             }
 
             @Override
             public void onFailure(Call<defaultResponse> call, Throwable t) {
-                updateBarHandler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        RetrofitUtil.hideDialog();
-                    }
-                }, 500);
-
-                // show some error toast or message to display the api call issue
-                //RetrofitUtil.showToast(LoginActivity.this, "Unable to access API");
-                new SampleDialog("", "Unable to access API", mContext);
             }
         });
     }
